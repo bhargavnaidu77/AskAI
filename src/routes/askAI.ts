@@ -122,10 +122,17 @@ router.post('/askAI', async (req: Request, res: Response) => {
         stream: true,
       });
 
-      res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+      res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
       res.setHeader('Cache-Control', 'no-cache, no-transform');
+      res.setHeader('Connection', 'keep-alive');
       res.setHeader('X-Accel-Buffering', 'no');
       res.flushHeaders();
+      // Open the stream immediately so proxies don't hold it
+      res.write(': open\n\n');
+
+      const send = (text: string) => {
+        res.write(`data: ${JSON.stringify({ t: text })}\n\n`);
+      };
 
       let reasoningOpen = false;
       for await (const chunk of completion) {
@@ -135,26 +142,27 @@ router.post('/askAI', async (req: Request, res: Response) => {
         if (!delta) continue;
         if (delta.reasoning_content) {
           if (!reasoningOpen) {
-            res.write('<think>');
+            send('<think>');
             reasoningOpen = true;
           }
-          res.write(delta.reasoning_content);
+          send(delta.reasoning_content);
         }
         if (delta.content) {
           if (reasoningOpen) {
-            res.write('</think>');
+            send('</think>');
             reasoningOpen = false;
           }
-          res.write(delta.content);
+          send(delta.content);
         }
       }
-      if (reasoningOpen) res.write('</think>');
+      if (reasoningOpen) send('</think>');
+      res.write('data: [DONE]\n\n');
       return res.end();
     }
 
     const completion = await openai.chat.completions.create({
       model,
-      messages: [{ role: 'user', content: message }],
+      messages: chat,
       temperature,
       top_p,
       max_tokens,
