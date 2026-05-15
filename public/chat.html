@@ -705,12 +705,34 @@
           });
         };
 
-        while (true) {
+        let sseBuffer = '';
+        let streamDone = false;
+        while (!streamDone) {
           const { value, done } = await reader.read();
           if (done) break;
-          raw += decoder.decode(value, { stream: true });
-          if (!gotFirstToken && raw.trim()) gotFirstToken = true;
-          scheduleRender();
+          sseBuffer += decoder.decode(value, { stream: true });
+          // SSE events are delimited by a blank line
+          let sepIdx;
+          while ((sepIdx = sseBuffer.indexOf('\n\n')) !== -1) {
+            const frame = sseBuffer.slice(0, sepIdx);
+            sseBuffer = sseBuffer.slice(sepIdx + 2);
+            // Each frame can have multiple lines; we only care about "data:" lines
+            const dataLines = frame
+              .split('\n')
+              .filter(l => l.startsWith('data:'))
+              .map(l => l.slice(5).trimStart());
+            if (dataLines.length === 0) continue; // comment/heartbeat
+            const payload = dataLines.join('\n');
+            if (payload === '[DONE]') { streamDone = true; break; }
+            try {
+              const obj = JSON.parse(payload);
+              if (typeof obj.t === 'string') {
+                raw += obj.t;
+                if (!gotFirstToken && raw.trim()) gotFirstToken = true;
+                scheduleRender();
+              }
+            } catch { /* ignore malformed frame */ }
+          }
         }
         // Final flush to ensure last chunk renders
         await new Promise(r => requestAnimationFrame(r));
