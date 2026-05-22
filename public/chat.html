@@ -4,14 +4,29 @@
   <meta charset="utf-8" />
   <title>AskAI</title>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="color-scheme" content="light" />
+  <meta name="color-scheme" content="light dark" />
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700&family=Inter+Tight:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 
-  <link rel="stylesheet"
+  <!-- Code highlight themes: light (github) for light mode, vs2015 (VS Code Dark+) for dark mode. Toggled via .disabled -->
+  <link rel="stylesheet" id="hljsLight"
         href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.10.0/styles/github.min.css" />
+  <link rel="stylesheet" id="hljsDark"
+        href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.10.0/styles/vs2015.min.css" disabled />
+  <!-- Apply theme before CSS resolves to avoid flash -->
+  <script>
+    (function () {
+      try {
+        var s = JSON.parse(localStorage.getItem('askai.settings.v2') || '{}');
+        var theme = s.theme || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        document.documentElement.dataset.theme = theme;
+        document.getElementById('hljsLight').disabled = (theme === 'dark');
+        document.getElementById('hljsDark').disabled = (theme !== 'dark');
+      } catch (e) {}
+    })();
+  </script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.10.0/highlight.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/marked@13.0.3/marked.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.7/dist/purify.min.js"></script>
@@ -37,6 +52,13 @@
       --success: #0d7a47;
       --danger: #c0291c;
       --code-bg: #f3f1ea;
+      --diff-add-bg: rgba(13, 122, 71, .10);
+      --diff-add-fg: #0a3d22;
+      --diff-del-bg: rgba(192, 41, 28, .08);
+      --diff-del-fg: #5a0e08;
+      --error-bg: #fdf2f1;
+      --error-border: #f4cdc9;
+      --error-fg: #7c1c14;
       --shadow-card: 0 1px 0 rgba(10,10,10,.04), 0 2px 4px rgba(10,10,10,.04);
       --shadow-lift: 0 12px 32px -16px rgba(10,10,10,.18), 0 2px 6px rgba(10,10,10,.05);
       --display: 'Bricolage Grotesque', 'Inter Tight', system-ui, sans-serif;
@@ -45,6 +67,37 @@
       --gutter: clamp(16px, 4vw, 28px);
       --measure: 760px;
       --rail-w: 248px;
+    }
+
+    /* Dark mode — cool, modern, professional. Code blocks get the VS Code Dark+ theme via vs2015.min.css */
+    [data-theme="dark"] {
+      color-scheme: dark;
+      --bg: #0e0f13;
+      --bg-rail: #0a0b0e;
+      --surface: #16181d;
+      --surface-2: #1d2026;
+      --ink: #ecedf0;
+      --ink-2: #c8cbd1;
+      --ink-dim: #888d96;
+      --ink-faint: #565a63;
+      --hairline: #262a32;
+      --hairline-strong: #353a44;
+      --accent: #6b86ff;
+      --accent-hover: #8aa0ff;
+      --accent-soft: rgba(107, 134, 255, .14);
+      --accent-ink: #0a0a0a;
+      --success: #4ade80;
+      --danger: #f87171;
+      --code-bg: #1e1e1e;        /* matches VS Code Dark+ background */
+      --diff-add-bg: rgba(74, 222, 128, .12);
+      --diff-add-fg: #b6f0c8;
+      --diff-del-bg: rgba(248, 113, 113, .12);
+      --diff-del-fg: #fbb4b4;
+      --error-bg: rgba(248, 113, 113, .08);
+      --error-border: rgba(248, 113, 113, .25);
+      --error-fg: #fbb4b4;
+      --shadow-card: 0 1px 0 rgba(0,0,0,.4), 0 2px 4px rgba(0,0,0,.3);
+      --shadow-lift: 0 12px 32px -16px rgba(0,0,0,.7), 0 2px 6px rgba(0,0,0,.4);
     }
 
     * { box-sizing: border-box; }
@@ -285,6 +338,35 @@
     }
     .menu-btn:active { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
     .menu-btn svg { width: 18px; height: 18px; }
+
+    /* Theme toggle */
+    .theme-toggle {
+      background: var(--surface);
+      border: 1px solid var(--hairline);
+      color: var(--ink-dim);
+      width: 34px; height: 34px;
+      border-radius: 999px;
+      display: inline-flex;
+      align-items: center; justify-content: center;
+      cursor: pointer;
+      transition: color .15s, border-color .15s, background .15s, transform .25s;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+      flex: 0 0 auto;
+    }
+    .theme-toggle:hover { color: var(--accent); border-color: var(--accent); }
+    .theme-toggle:active { transform: scale(.92); }
+    .theme-toggle svg { width: 15px; height: 15px; transition: transform .35s cubic-bezier(.2,.8,.2,1); }
+    .theme-toggle .sun { display: none; }
+    .theme-toggle .moon { display: block; }
+    [data-theme="dark"] .theme-toggle .moon { display: none; }
+    [data-theme="dark"] .theme-toggle .sun { display: block; }
+    .header-right { display: flex; align-items: center; gap: 10px; }
+
+    /* Dark-mode select arrow (the svg in select uses hardcoded color) */
+    [data-theme="dark"] select {
+      background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23888d96' stroke-width='2.5' stroke-linecap='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+    }
 
     /* Touch-friendly defaults */
     button, select, input, textarea, a { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
@@ -724,13 +806,13 @@
       font-weight: 500;
     }
     .diff-line.add {
-      background: rgba(13, 122, 71, .10);
-      color: #0a3d22;
+      background: var(--diff-add-bg);
+      color: var(--diff-add-fg);
     }
     .diff-line.add::before { content: '+'; color: var(--success); }
     .diff-line.del {
-      background: rgba(192, 41, 28, .08);
-      color: #5a0e08;
+      background: var(--diff-del-bg);
+      color: var(--diff-del-fg);
     }
     .diff-line.del::before { content: '−'; color: var(--danger); }
     .diff-line.hunk {
@@ -885,11 +967,11 @@
 
     /* Error */
     .turn.error .content {
-      background: #fdf2f1;
-      border: 1px solid #f4cdc9;
+      background: var(--error-bg);
+      border: 1px solid var(--error-border);
       border-left: 3px solid var(--danger);
       padding: 12px 16px;
-      color: #7c1c14;
+      color: var(--error-fg);
       border-radius: 4px;
       font-size: 14px;
     }
@@ -924,7 +1006,7 @@
     form {
       grid-area: composer;
       padding: 12px var(--gutter) 22px;
-      background: linear-gradient(180deg, rgba(246,244,239,0) 0%, var(--bg) 50%);
+      background: linear-gradient(180deg, transparent 0%, var(--bg) 50%);
       position: relative;
     }
     .composer {
@@ -1143,9 +1225,15 @@
         <span class="model-name" id="modelCrumb">openai / gpt-oss-20b</span>
       </div>
     </div>
-    <div class="status" id="status" data-state="idle">
-      <span class="pulse"></span>
-      <span id="statusText">ready</span>
+    <div class="header-right">
+      <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle theme" title="Toggle theme">
+        <svg class="moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        <svg class="sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
+      </button>
+      <div class="status" id="status" data-state="idle">
+        <span class="pulse"></span>
+        <span id="statusText">ready</span>
+      </div>
     </div>
   </header>
 
@@ -1259,6 +1347,7 @@
     const railBackdrop = document.getElementById('railBackdrop');
     const menuBtn = document.getElementById('menuBtn');
     const railClose = document.getElementById('railClose');
+    const themeToggle = document.getElementById('themeToggle');
     const stopSeqEl = document.getElementById('stopSeq');
     const copyMdBtn = document.getElementById('copyMd');
     const paletteBackdrop = document.getElementById('paletteBackdrop');
@@ -1282,6 +1371,7 @@
         if (typeof s.temperature === 'number') temperatureEl.value = s.temperature;
         if (typeof s.topP === 'number') topPEl.value = s.topP;
         if (typeof s.stopSeq === 'string') stopSeqEl.value = s.stopSeq;
+        // Theme already applied by the inline bootstrap script in <head>; keep it.
       } catch {}
       syncSettingsUI();
     }
@@ -1293,9 +1383,23 @@
           temperature: Number(temperatureEl.value),
           topP: Number(topPEl.value),
           stopSeq: stopSeqEl.value,
+          theme: document.documentElement.dataset.theme || 'light',
         }));
       } catch {}
     }
+    function applyTheme(theme) {
+      if (theme !== 'dark' && theme !== 'light') theme = 'light';
+      document.documentElement.dataset.theme = theme;
+      const lightLink = document.getElementById('hljsLight');
+      const darkLink = document.getElementById('hljsDark');
+      if (lightLink) lightLink.disabled = (theme === 'dark');
+      if (darkLink) darkLink.disabled = (theme !== 'dark');
+    }
+    themeToggle.addEventListener('click', () => {
+      const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+      applyTheme(next);
+      saveSettings();
+    });
     function parseStopSequences() {
       const raw = (stopSeqEl.value || '').trim();
       if (!raw) return [];
