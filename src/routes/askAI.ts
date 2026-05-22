@@ -79,6 +79,14 @@ const router = Router();
  */
 type ChatMsg = { role: 'system' | 'user' | 'assistant'; content: string };
 
+const MODEL_MAX_TOKENS: Record<string, number> = {
+  'google/gemma-2-2b-it': 8192,
+  'google/gemma-3n-e4b-it': 8192,
+  'openai/gpt-oss-20b': 16384,
+  'openai/gpt-oss-120b': 16384,
+};
+const DEFAULT_MAX_TOKENS = 8192;
+
 router.post('/askAI', async (req: Request, res: Response) => {
   const {
     message,
@@ -86,9 +94,14 @@ router.post('/askAI', async (req: Request, res: Response) => {
     model = DEFAULT_MODEL,
     temperature = 0.2,
     top_p = 0.7,
-    max_tokens = 1024,
+    max_tokens,
     stream = false,
   } = req.body || {};
+
+  const resolvedMaxTokens =
+    typeof max_tokens === 'number' && max_tokens > 0
+      ? Math.min(max_tokens, MODEL_MAX_TOKENS[model] ?? DEFAULT_MAX_TOKENS)
+      : MODEL_MAX_TOKENS[model] ?? DEFAULT_MAX_TOKENS;
 
   let chat: ChatMsg[] = [];
   if (Array.isArray(messages) && messages.length > 0) {
@@ -118,7 +131,7 @@ router.post('/askAI', async (req: Request, res: Response) => {
         messages: chat,
         temperature,
         top_p,
-        max_tokens,
+        max_tokens: resolvedMaxTokens,
         stream: true,
       });
 
@@ -165,7 +178,7 @@ router.post('/askAI', async (req: Request, res: Response) => {
       messages: chat,
       temperature,
       top_p,
-      max_tokens,
+      max_tokens: resolvedMaxTokens,
       stream: false,
     });
 

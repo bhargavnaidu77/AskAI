@@ -14,4 +14,4 @@ export const openai = new OpenAI({
 });
 
 export const DEFAULT_MODEL =
-  process.env.NVIDIA_MODEL || 'deepseek-ai/deepseek-v4-pro';
+  process.env.NVIDIA_MODEL || 'openai/gpt-oss-20b';
