@@ -79,11 +79,13 @@
       display: flex; flex-direction: column;
       gap: 22px;
       overflow-y: auto;
-      animation: railIn .55s cubic-bezier(.2,.8,.2,1) both;
+    }
+    @media (min-width: 881px) {
+      .rail { animation: railIn .55s cubic-bezier(.2,.8,.2,1) both; }
     }
     @keyframes railIn {
-      from { opacity: 0; transform: translateX(-8px); }
-      to { opacity: 1; transform: translateX(0); }
+      from { opacity: 0; }
+      to { opacity: 1; }
     }
     .rail-brand {
       display: flex; flex-direction: column; gap: 2px;
@@ -274,12 +276,18 @@
       background: var(--surface);
       border: 1px solid var(--hairline-strong);
       color: var(--ink);
-      width: 36px; height: 36px;
-      border-radius: 4px;
+      width: 40px; height: 40px;
+      border-radius: 6px;
       align-items: center; justify-content: center;
       cursor: pointer;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
     }
+    .menu-btn:active { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
     .menu-btn svg { width: 18px; height: 18px; }
+
+    /* Touch-friendly defaults */
+    button, select, input, textarea, a { touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
 
     /* ─────────── Main / Log ─────────── */
     .main { grid-area: main; position: relative; min-height: 0; }
@@ -290,6 +298,7 @@
       padding: 32px 0 56px;
       scroll-behavior: auto;
       overscroll-behavior: contain;
+      overflow-anchor: none;
     }
     #log::-webkit-scrollbar { width: 8px; }
     #log::-webkit-scrollbar-track { background: transparent; }
@@ -642,6 +651,226 @@
       padding-top: 12px;
     }
 
+    /* ─────────── Turn actions (regenerate / edit / copy) ─────────── */
+    .turn-actions {
+      display: flex; gap: 6px;
+      margin-top: 12px;
+      opacity: 0;
+      transition: opacity .15s;
+    }
+    .turn:hover .turn-actions,
+    .turn.last .turn-actions { opacity: 1; }
+    .action-btn {
+      background: transparent;
+      border: 1px solid var(--hairline);
+      color: var(--ink-dim);
+      padding: 5px 10px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      display: inline-flex; align-items: center; gap: 6px;
+      transition: color .15s, border-color .15s, background .15s;
+    }
+    .action-btn:hover {
+      color: var(--accent);
+      border-color: var(--accent);
+      background: var(--accent-soft);
+    }
+    .action-btn.copied { color: var(--success); border-color: var(--success); }
+    .action-btn svg { width: 11px; height: 11px; }
+
+    /* Inline edit area for "Edit & resend" */
+    .edit-area {
+      display: flex; flex-direction: column; gap: 10px;
+      padding: 10px 12px 12px 16px;
+      background: var(--surface);
+      border: 1px solid var(--accent);
+      border-left: 2.5px solid var(--accent);
+      border-radius: 4px;
+    }
+    .edit-area textarea {
+      width: 100%; min-height: 60px; max-height: 240px;
+      resize: vertical;
+      padding: 6px 8px;
+      background: var(--surface-2);
+      border: 1px solid var(--hairline);
+      border-radius: 3px;
+      font-family: var(--display);
+      font-size: 18px;
+      line-height: 1.45;
+      color: var(--ink);
+      outline: 0;
+    }
+    .edit-area textarea:focus { border-color: var(--accent); }
+    .edit-area .row { display: flex; gap: 8px; justify-content: flex-end; }
+
+    /* ─────────── Diff blocks ─────────── */
+    .code-block.is-diff pre { padding: 0; }
+    .diff-line {
+      display: block;
+      padding: 0 16px 0 32px;
+      position: relative;
+      white-space: pre;
+    }
+    .diff-line::before {
+      position: absolute;
+      left: 12px;
+      width: 14px;
+      text-align: center;
+      color: var(--ink-faint);
+      font-weight: 500;
+    }
+    .diff-line.add {
+      background: rgba(13, 122, 71, .10);
+      color: #0a3d22;
+    }
+    .diff-line.add::before { content: '+'; color: var(--success); }
+    .diff-line.del {
+      background: rgba(192, 41, 28, .08);
+      color: #5a0e08;
+    }
+    .diff-line.del::before { content: '−'; color: var(--danger); }
+    .diff-line.hunk {
+      background: var(--accent-soft);
+      color: var(--accent);
+      font-weight: 500;
+    }
+    .diff-line.hunk::before { content: '@'; color: var(--accent); }
+    .diff-line.ctx::before { content: ''; }
+    /* First/last padding inside diff pre */
+    .code-block.is-diff pre > .diff-line:first-child { padding-top: 12px; }
+    .code-block.is-diff pre > .diff-line:last-child { padding-bottom: 12px; }
+
+    /* ─────────── Rail: stop sequences ─────────── */
+    .field input[type="text"] {
+      width: 100%;
+      background: var(--surface);
+      color: var(--ink);
+      border: 1px solid var(--hairline-strong);
+      border-radius: 4px;
+      padding: 8px 10px;
+      font-family: var(--mono);
+      font-size: 12px;
+      outline: 0;
+      transition: border-color .15s, box-shadow .15s;
+    }
+    .field input[type="text"]:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+    .field input[type="text"]::placeholder { color: var(--ink-faint); }
+
+    /* ─────────── Command palette (⌘K) ─────────── */
+    .palette-backdrop {
+      position: fixed; inset: 0;
+      background: rgba(10, 10, 10, .35);
+      backdrop-filter: blur(2px);
+      opacity: 0; pointer-events: none;
+      transition: opacity .18s;
+      z-index: 200;
+      display: grid; place-items: start center;
+      padding-top: 12vh;
+    }
+    .palette-backdrop.show { opacity: 1; pointer-events: auto; }
+    .palette {
+      width: min(560px, 92vw);
+      background: var(--surface);
+      border: 1px solid var(--hairline-strong);
+      border-radius: 8px;
+      box-shadow: var(--shadow-lift);
+      overflow: hidden;
+      transform: translateY(-8px) scale(.98);
+      transition: transform .2s cubic-bezier(.2,.8,.2,1);
+    }
+    .palette-backdrop.show .palette { transform: translateY(0) scale(1); }
+    .palette-input-wrap {
+      display: flex; align-items: center; gap: 10px;
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--hairline);
+    }
+    .palette-input-wrap svg { width: 14px; height: 14px; color: var(--ink-faint); flex: 0 0 auto; }
+    .palette-input {
+      flex: 1;
+      background: transparent;
+      border: 0; outline: 0;
+      font-family: var(--mono);
+      font-size: 14px;
+      color: var(--ink);
+    }
+    .palette-input::placeholder { color: var(--ink-faint); }
+    .palette-list {
+      max-height: 320px;
+      overflow-y: auto;
+      padding: 6px;
+    }
+    .palette-item {
+      display: flex; align-items: center; gap: 12px;
+      padding: 9px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 13px;
+      color: var(--ink);
+    }
+    .palette-item.active {
+      background: var(--accent-soft);
+      color: var(--accent);
+    }
+    .palette-item .cmd {
+      font-family: var(--mono);
+      font-size: 12px;
+      min-width: 88px;
+      color: var(--accent);
+    }
+    .palette-item.active .cmd { color: var(--accent-hover); }
+    .palette-item .desc { color: var(--ink-dim); }
+    .palette-item.active .desc { color: var(--ink); }
+    .palette-empty {
+      padding: 18px 16px;
+      color: var(--ink-faint);
+      font-family: var(--mono);
+      font-size: 12px;
+      text-align: center;
+    }
+    .palette-hint {
+      padding: 8px 16px;
+      border-top: 1px solid var(--hairline);
+      font-family: var(--mono);
+      font-size: 10px;
+      letter-spacing: .12em;
+      color: var(--ink-faint);
+      display: flex; gap: 14px;
+      justify-content: flex-end;
+    }
+    .palette-hint kbd {
+      background: var(--surface-2);
+      border: 1px solid var(--hairline);
+      border-radius: 2px;
+      padding: 1px 5px;
+      margin-right: 4px;
+    }
+
+    /* ─────────── Toast ─────────── */
+    .toast {
+      position: fixed;
+      bottom: 88px; left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: var(--ink);
+      color: var(--surface);
+      padding: 10px 18px;
+      border-radius: 999px;
+      font-family: var(--mono);
+      font-size: 11px;
+      letter-spacing: .12em;
+      box-shadow: var(--shadow-lift);
+      opacity: 0; pointer-events: none;
+      transition: opacity .2s, transform .2s;
+      z-index: 150;
+    }
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
     /* Streaming cursor — minimal vertical bar */
     .streaming .content::after {
       content: '';
@@ -786,12 +1015,13 @@
       .rail {
         position: fixed;
         top: 0; left: 0; bottom: 0;
-        width: min(320px, 88vw);
+        width: min(300px, 82vw);
         z-index: 100;
         transform: translateX(-102%);
         transition: transform .35s cubic-bezier(.2,.8,.2,1);
         border-right: 1px solid var(--hairline-strong);
         box-shadow: var(--shadow-lift);
+        padding-top: 64px; /* leave space for the close button */
       }
       .rail.open { transform: translateX(0); }
       .rail-backdrop {
@@ -805,16 +1035,20 @@
       .rail-mobile-close {
         display: flex;
         position: absolute;
-        top: 14px; right: 14px;
-        width: 32px; height: 32px;
+        top: 12px; right: 12px;
+        width: 44px; height: 44px;
         background: var(--surface);
         border: 1px solid var(--hairline-strong);
-        border-radius: 4px;
+        border-radius: 6px;
         align-items: center; justify-content: center;
         cursor: pointer;
         color: var(--ink);
+        z-index: 2;
+        touch-action: manipulation;
+        -webkit-tap-highlight-color: transparent;
       }
-      .rail-mobile-close svg { width: 14px; height: 14px; }
+      .rail-mobile-close:active { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+      .rail-mobile-close svg { width: 18px; height: 18px; stroke-width: 2.5; }
       .menu-btn { display: inline-flex; }
       header { padding: 12px var(--gutter); }
       .crumb { font-size: 16px; }
@@ -877,9 +1111,18 @@
         <label for="topP">Top-p <span class="val" id="topPVal">0.70</span></label>
         <input type="range" id="topP" min="0" max="1" step="0.05" value="0.7" />
       </div>
+      <div class="field">
+        <label for="stopSeq">Stop sequences</label>
+        <input type="text" id="stopSeq" placeholder='e.g. ```, END, \n\n' autocomplete="off" />
+      </div>
     </div>
 
     <div class="rail-spacer"></div>
+
+    <button id="copyMd" class="rail-action" type="button">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+      <span>Copy as Markdown</span>
+    </button>
 
     <button id="reset" class="rail-action primary" type="button">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
@@ -948,9 +1191,28 @@
       </button>
     </div>
     <div class="hint">
-      <kbd>Enter</kbd> to send · <kbd>Shift</kbd>+<kbd>Enter</kbd> for newline · <kbd>Esc</kbd> to stop
+      <kbd>Enter</kbd> to send · <kbd>Shift</kbd>+<kbd>Enter</kbd> newline · <kbd>Esc</kbd> stop · <kbd>Ctrl</kbd>+<kbd>K</kbd> commands
     </div>
   </form>
+
+  <!-- ─────────── Command palette (⌘K) ─────────── -->
+  <div class="palette-backdrop" id="paletteBackdrop" aria-hidden="true">
+    <div class="palette" role="dialog" aria-label="Command palette">
+      <div class="palette-input-wrap">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+        <input id="paletteInput" class="palette-input" type="text" placeholder="Type a command — try /clear, /regen, /copy, /model…" autocomplete="off" spellcheck="false" />
+      </div>
+      <div class="palette-list" id="paletteList"></div>
+      <div class="palette-hint">
+        <span><kbd>↑↓</kbd>navigate</span>
+        <span><kbd>↵</kbd>select</span>
+        <span><kbd>Esc</kbd>close</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
   <script>
     // ─────────── Marked setup ───────────
@@ -962,6 +1224,9 @@
     const RENDER_INTERVAL_MS = 70;  // streaming render throttle
     const SEND_PATH = 'M5 12l14 0M13 6l6 6-6 6';
     const STOP_PATH = 'M6 6h12v12H6z';
+    // Don't auto-focus the composer on touch — it pops the soft keyboard
+    const IS_TOUCH = matchMedia('(hover: none) and (pointer: coarse)').matches;
+    function focusInput() { if (!IS_TOUCH) input.focus(); }
 
     // ─────────── DOM refs ───────────
     const log = document.getElementById('log');
@@ -986,6 +1251,12 @@
     const railBackdrop = document.getElementById('railBackdrop');
     const menuBtn = document.getElementById('menuBtn');
     const railClose = document.getElementById('railClose');
+    const stopSeqEl = document.getElementById('stopSeq');
+    const copyMdBtn = document.getElementById('copyMd');
+    const paletteBackdrop = document.getElementById('paletteBackdrop');
+    const paletteInput = document.getElementById('paletteInput');
+    const paletteList = document.getElementById('paletteList');
+    const toast = document.getElementById('toast');
 
     // ─────────── State (in-memory only — no chat persistence) ───────────
     const history = [];
@@ -1002,6 +1273,7 @@
         if (typeof s.maxTokens === 'number') maxTokensEl.value = s.maxTokens;
         if (typeof s.temperature === 'number') temperatureEl.value = s.temperature;
         if (typeof s.topP === 'number') topPEl.value = s.topP;
+        if (typeof s.stopSeq === 'string') stopSeqEl.value = s.stopSeq;
       } catch {}
       syncSettingsUI();
     }
@@ -1012,8 +1284,17 @@
           maxTokens: Number(maxTokensEl.value),
           temperature: Number(temperatureEl.value),
           topP: Number(topPEl.value),
+          stopSeq: stopSeqEl.value,
         }));
       } catch {}
+    }
+    function parseStopSequences() {
+      const raw = (stopSeqEl.value || '').trim();
+      if (!raw) return [];
+      return raw.split(',')
+        .map(s => s.trim().replace(/\\n/g, '\n').replace(/\\t/g, '\t').replace(/\\r/g, '\r'))
+        .filter(Boolean)
+        .slice(0, 4);
     }
     function syncSettingsUI() {
       maxTokensVal.textContent = Number(maxTokensEl.value).toLocaleString();
@@ -1021,7 +1302,7 @@
       topPVal.textContent = Number(topPEl.value).toFixed(2);
       modelCrumb.textContent = modelSel.options[modelSel.selectedIndex].text;
     }
-    [modelSel, maxTokensEl, temperatureEl, topPEl].forEach(el =>
+    [modelSel, maxTokensEl, temperatureEl, topPEl, stopSeqEl].forEach(el =>
       el.addEventListener('input', () => { syncSettingsUI(); saveSettings(); })
     );
 
@@ -1038,16 +1319,56 @@
       statusText.textContent = text;
     }
 
-    // ─────────── Scroll ───────────
-    function isNearBottom() {
-      return log.scrollHeight - log.scrollTop - log.clientHeight < 80;
+    // ─────────── Scroll (intent-based, jitter-free during streaming) ───────────
+    let programmaticScrolling = false;
+    function isAtBottom() {
+      // Tight threshold for "did the user re-arrive at the bottom"
+      return log.scrollHeight - log.scrollTop - log.clientHeight < 20;
     }
+    function pinBottom() {
+      programmaticScrolling = true;
+      log.scrollTop = log.scrollHeight;
+      // Release on next frame after scroll event has fired
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        programmaticScrolling = false;
+      }));
+    }
+    function disengage() {
+      if (stickToBottom) {
+        stickToBottom = false;
+        scrollBtn.classList.add('show');
+      }
+    }
+    // User-intent listeners — any upward gesture disengages immediately,
+    // regardless of how small. This prevents the 70ms render from snapping back.
+    log.addEventListener('wheel', (e) => {
+      if (e.deltaY < 0) disengage();
+    }, { passive: true });
+    let touchY = 0;
+    log.addEventListener('touchstart', (e) => {
+      if (e.touches.length) touchY = e.touches[0].clientY;
+    }, { passive: true });
+    log.addEventListener('touchmove', (e) => {
+      if (!e.touches.length) return;
+      const y = e.touches[0].clientY;
+      if (y - touchY > 2) disengage(); // finger moving down = scrolling content up
+      touchY = y;
+    }, { passive: true });
+    // Keyboard scroll (PageUp/Up/Home) — also disengage
+    log.addEventListener('keydown', (e) => {
+      if (['ArrowUp', 'PageUp', 'Home'].includes(e.key)) disengage();
+    });
+    // Scroll listener only re-engages when user has actually scrolled back to bottom
     log.addEventListener('scroll', () => {
-      stickToBottom = isNearBottom();
-      scrollBtn.classList.toggle('show', !stickToBottom);
+      if (programmaticScrolling) return; // ignore our own scrolls
+      if (isAtBottom()) {
+        stickToBottom = true;
+        scrollBtn.classList.remove('show');
+      }
     }, { passive: true });
     scrollBtn.addEventListener('click', () => {
       stickToBottom = true;
+      scrollBtn.classList.remove('show');
       log.scrollTo({ top: log.scrollHeight, behavior: 'smooth' });
     });
 
@@ -1109,8 +1430,9 @@
         if (pre.parentElement && pre.parentElement.classList.contains('code-block')) return;
         const codeEl = pre.querySelector('code');
         const lang = (codeEl && codeEl.className.match(/language-([\w-]+)/) || [])[1] || 'text';
+        const isDiff = lang === 'diff';
         const block = document.createElement('div');
-        block.className = 'code-block';
+        block.className = 'code-block' + (isDiff ? ' is-diff' : '');
         const head = document.createElement('div');
         head.className = 'code-head';
         const langSpan = document.createElement('span');
@@ -1133,7 +1455,35 @@
         block.appendChild(head);
         block.appendChild(pre);
 
-        if (highlight && codeEl) {
+        if (isDiff && codeEl) {
+          // Custom diff renderer with gutter styling
+          const raw = codeEl.textContent || '';
+          const lines = raw.split('\n');
+          const frag = document.createDocumentFragment();
+          lines.forEach((line, idx) => {
+            const span = document.createElement('span');
+            let cls = 'ctx';
+            let text = line;
+            if (line.startsWith('+++') || line.startsWith('---')) {
+              cls = 'hunk';
+            } else if (line.startsWith('@@')) {
+              cls = 'hunk';
+            } else if (line.startsWith('+')) {
+              cls = 'add';
+              text = line.slice(1);
+            } else if (line.startsWith('-')) {
+              cls = 'del';
+              text = line.slice(1);
+            } else if (line.length > 0 && line.startsWith(' ')) {
+              text = line.slice(1);
+            }
+            span.className = 'diff-line ' + cls;
+            span.textContent = text + (idx < lines.length - 1 ? '\n' : '');
+            frag.appendChild(span);
+          });
+          codeEl.innerHTML = '';
+          codeEl.appendChild(frag);
+        } else if (highlight && codeEl) {
           try {
             if (lang !== 'text' && hljs.getLanguage(lang)) {
               codeEl.innerHTML = hljs.highlight(codeEl.textContent, { language: lang, ignoreIllegals: true }).value;
@@ -1197,7 +1547,7 @@
       turn.appendChild(contentEl);
       log.appendChild(turn);
       if (stickToBottom) {
-        requestAnimationFrame(() => { log.scrollTop = log.scrollHeight; });
+        requestAnimationFrame(() => pinBottom());
       }
 
       return { turn, contentEl, reasoningEl, reasoningBody };
@@ -1251,7 +1601,7 @@
         }
         // Stream without expensive syntax highlighting; final pass highlights
         renderMarkdown(aiTurn.contentEl, content, { highlight: false });
-        if (stickToBottom) log.scrollTop = log.scrollHeight;
+        if (stickToBottom) pinBottom();
       };
 
       const scheduleRender = () => {
@@ -1265,6 +1615,7 @@
         // Send only the latest 8 messages (4 user + 4 assistant)
         const outbound = history.slice(-MAX_CONTEXT_MESSAGES);
 
+        const stopList = parseStopSequences();
         const res = await fetch('/api/askAI', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -1275,6 +1626,7 @@
             max_tokens: Number(maxTokensEl.value),
             temperature: Number(temperatureEl.value),
             top_p: Number(topPEl.value),
+            ...(stopList.length ? { stop: stopList } : {}),
           }),
           signal: abortCtrl.signal,
         });
@@ -1330,7 +1682,7 @@
         } else {
           renderMarkdown(aiTurn.contentEl, finalParsed.content, { highlight: true });
         }
-        if (stickToBottom) log.scrollTop = log.scrollHeight;
+        if (stickToBottom) pinBottom();
         if (finalText) {
           history.push({ role: 'assistant', content: finalText });
         }
@@ -1360,9 +1712,279 @@
         busy = false;
         abortCtrl = null;
         setSendingState(false);
-        input.focus();
+        refreshTurnActions();
+        focusInput();
       }
     }
+
+    // ─────────── Turn action buttons (Regenerate / Edit / Copy) ───────────
+    function refreshTurnActions() {
+      // Remove all action bars + 'last' markers; re-add on the latest turns only
+      log.querySelectorAll('.turn-actions').forEach(el => el.remove());
+      log.querySelectorAll('.turn.last').forEach(el => el.classList.remove('last'));
+
+      const turns = log.querySelectorAll('.turn');
+      if (turns.length === 0) return;
+
+      // Find last AI turn (for regenerate + copy) and last user turn (for edit)
+      let lastAi = null, lastUser = null;
+      for (let i = turns.length - 1; i >= 0; i--) {
+        if (!lastAi && turns[i].classList.contains('ai')) lastAi = turns[i];
+        if (!lastUser && turns[i].classList.contains('user')) lastUser = turns[i];
+        if (lastAi && lastUser) break;
+      }
+
+      if (lastAi) {
+        lastAi.classList.add('last');
+        const bar = document.createElement('div');
+        bar.className = 'turn-actions';
+
+        const copyBtn = document.createElement('button');
+        copyBtn.className = 'action-btn';
+        copyBtn.type = 'button';
+        copyBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg><span>Copy</span>';
+        copyBtn.addEventListener('click', () => {
+          // Find this AI turn's index in history (assistant)
+          const lastAssistant = [...history].reverse().find(m => m.role === 'assistant');
+          if (!lastAssistant) return;
+          navigator.clipboard.writeText(lastAssistant.content).then(() => {
+            copyBtn.classList.add('copied');
+            copyBtn.querySelector('span').textContent = 'Copied';
+            setTimeout(() => {
+              copyBtn.classList.remove('copied');
+              copyBtn.querySelector('span').textContent = 'Copy';
+            }, 1500);
+          });
+        });
+        bar.appendChild(copyBtn);
+
+        const regenBtn = document.createElement('button');
+        regenBtn.className = 'action-btn';
+        regenBtn.type = 'button';
+        regenBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/><path d="M3 21v-5h5"/></svg><span>Regenerate</span>';
+        regenBtn.addEventListener('click', regenerateLast);
+        bar.appendChild(regenBtn);
+
+        lastAi.appendChild(bar);
+      }
+
+      if (lastUser) {
+        // Don't decorate the user turn if it's still mid-stream above
+        lastUser.classList.add('last');
+        const bar = document.createElement('div');
+        bar.className = 'turn-actions';
+        const editBtn = document.createElement('button');
+        editBtn.className = 'action-btn';
+        editBtn.type = 'button';
+        editBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg><span>Edit & resend</span>';
+        editBtn.addEventListener('click', () => beginEdit(lastUser));
+        bar.appendChild(editBtn);
+        lastUser.appendChild(bar);
+      }
+    }
+
+    function regenerateLast() {
+      if (busy) return;
+      // Find the last user message in history
+      let lastUserIdx = -1;
+      for (let i = history.length - 1; i >= 0; i--) {
+        if (history[i].role === 'user') { lastUserIdx = i; break; }
+      }
+      if (lastUserIdx === -1) return;
+      const lastUserMsg = history[lastUserIdx].content;
+
+      // Drop everything from that user message onward (we'll re-add via ask)
+      history.splice(lastUserIdx);
+
+      // Remove the corresponding UI turns: walk back removing last user + everything after
+      const turns = [...log.querySelectorAll('.turn')];
+      let userTurnsFound = 0;
+      for (let i = turns.length - 1; i >= 0; i--) {
+        const t = turns[i];
+        if (t.classList.contains('user')) {
+          userTurnsFound++;
+          t.remove();
+          turnCount--;
+          break;
+        }
+        t.remove();
+        turnCount--;
+      }
+      // Also remove any non-user turns between the removed user and the end (already done above for turns after, but if any remained — none should)
+      ask(lastUserMsg);
+    }
+
+    function beginEdit(userTurnEl) {
+      if (busy) return;
+      const contentEl = userTurnEl.querySelector('.content');
+      const oldText = contentEl.textContent || '';
+
+      const wrap = document.createElement('div');
+      wrap.className = 'edit-area';
+      const ta = document.createElement('textarea');
+      ta.value = oldText;
+      const row = document.createElement('div');
+      row.className = 'row';
+      const cancel = document.createElement('button');
+      cancel.className = 'action-btn';
+      cancel.type = 'button';
+      cancel.innerHTML = '<span>Cancel</span>';
+      const save = document.createElement('button');
+      save.className = 'action-btn';
+      save.type = 'button';
+      save.innerHTML = '<span>Save & resend</span>';
+      row.appendChild(cancel);
+      row.appendChild(save);
+      wrap.appendChild(ta);
+      wrap.appendChild(row);
+
+      contentEl.replaceWith(wrap);
+      userTurnEl.querySelector('.turn-actions')?.remove();
+      ta.focus();
+      ta.setSelectionRange(ta.value.length, ta.value.length);
+
+      cancel.addEventListener('click', () => {
+        wrap.replaceWith(contentEl);
+        refreshTurnActions();
+      });
+      save.addEventListener('click', () => doSave());
+      ta.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); doSave(); }
+        if (e.key === 'Escape') { e.preventDefault(); cancel.click(); }
+      });
+
+      function doSave() {
+        const newText = ta.value.trim();
+        if (!newText) return;
+        // Drop the last user msg + any following assistant in history
+        let lastUserIdx = -1;
+        for (let i = history.length - 1; i >= 0; i--) {
+          if (history[i].role === 'user') { lastUserIdx = i; break; }
+        }
+        if (lastUserIdx !== -1) history.splice(lastUserIdx);
+
+        // Remove this user turn and any turns after it
+        const allTurns = [...log.querySelectorAll('.turn')];
+        let removeFrom = allTurns.indexOf(userTurnEl);
+        if (removeFrom !== -1) {
+          for (let i = allTurns.length - 1; i >= removeFrom; i--) {
+            allTurns[i].remove();
+            turnCount--;
+          }
+        }
+        ask(newText);
+      }
+    }
+
+    // ─────────── Copy whole conversation as Markdown ───────────
+    function conversationToMarkdown() {
+      if (history.length === 0) return '';
+      const stamp = new Date().toISOString().slice(0, 19).replace('T', ' ');
+      const lines = [`# AskAI conversation`, '', `_${stamp}_`, ''];
+      history.forEach((m, i) => {
+        const header = m.role === 'user' ? '## You' : '## Assistant';
+        lines.push(header, '', m.content.trim(), '');
+      });
+      return lines.join('\n');
+    }
+    function showToast(msg) {
+      toast.textContent = msg;
+      toast.classList.add('show');
+      clearTimeout(showToast._t);
+      showToast._t = setTimeout(() => toast.classList.remove('show'), 1800);
+    }
+    copyMdBtn.addEventListener('click', () => {
+      const md = conversationToMarkdown();
+      if (!md) { showToast('Nothing to copy yet'); return; }
+      navigator.clipboard.writeText(md).then(
+        () => showToast('Copied conversation'),
+        () => showToast('Copy failed')
+      );
+    });
+
+    // ─────────── Command palette (⌘K) ───────────
+    const COMMANDS = [
+      { cmd: '/clear', desc: 'Clear conversation and start over', run: () => resetBtn.click() },
+      { cmd: '/regen', desc: 'Regenerate the last response', run: () => regenerateLast() },
+      { cmd: '/copy', desc: 'Copy conversation as Markdown', run: () => copyMdBtn.click() },
+      { cmd: '/stop', desc: 'Focus stop-sequence input', run: () => { openRail(); setTimeout(() => stopSeqEl.focus(), 50); } },
+    ];
+    // Per-model switch commands
+    [...modelSel.options].forEach(opt => {
+      COMMANDS.push({
+        cmd: '/model ' + opt.value,
+        desc: 'Switch to ' + opt.text,
+        run: () => { modelSel.value = opt.value; syncSettingsUI(); saveSettings(); showToast('Model → ' + opt.text); }
+      });
+    });
+
+    let paletteActiveIdx = 0;
+    function openPalette() {
+      paletteBackdrop.classList.add('show');
+      paletteBackdrop.setAttribute('aria-hidden', 'false');
+      paletteInput.value = '';
+      paletteActiveIdx = 0;
+      renderPalette();
+      requestAnimationFrame(() => paletteInput.focus());
+    }
+    function closePalette() {
+      paletteBackdrop.classList.remove('show');
+      paletteBackdrop.setAttribute('aria-hidden', 'true');
+    }
+    function filteredCommands() {
+      const q = paletteInput.value.trim().toLowerCase();
+      if (!q) return COMMANDS;
+      return COMMANDS.filter(c =>
+        c.cmd.toLowerCase().includes(q) || c.desc.toLowerCase().includes(q)
+      );
+    }
+    function renderPalette() {
+      const items = filteredCommands();
+      if (paletteActiveIdx >= items.length) paletteActiveIdx = 0;
+      if (items.length === 0) {
+        paletteList.innerHTML = '<div class="palette-empty">No matching commands</div>';
+        return;
+      }
+      paletteList.innerHTML = '';
+      items.forEach((c, i) => {
+        const el = document.createElement('div');
+        el.className = 'palette-item' + (i === paletteActiveIdx ? ' active' : '');
+        el.innerHTML = `<span class="cmd">${c.cmd}</span><span class="desc">${c.desc}</span>`;
+        el.addEventListener('mouseenter', () => { paletteActiveIdx = i; renderPalette(); });
+        el.addEventListener('click', () => { closePalette(); c.run(); });
+        paletteList.appendChild(el);
+      });
+    }
+    paletteInput.addEventListener('input', () => { paletteActiveIdx = 0; renderPalette(); });
+    paletteInput.addEventListener('keydown', (e) => {
+      const items = filteredCommands();
+      if (e.key === 'ArrowDown') { e.preventDefault(); paletteActiveIdx = (paletteActiveIdx + 1) % Math.max(1, items.length); renderPalette(); }
+      else if (e.key === 'ArrowUp') { e.preventDefault(); paletteActiveIdx = (paletteActiveIdx - 1 + items.length) % Math.max(1, items.length); renderPalette(); }
+      else if (e.key === 'Enter') {
+        e.preventDefault();
+        if (items[paletteActiveIdx]) { closePalette(); items[paletteActiveIdx].run(); }
+      }
+    });
+    paletteBackdrop.addEventListener('click', (e) => { if (e.target === paletteBackdrop) closePalette(); });
+
+    // Open palette on Ctrl/Cmd+K
+    document.addEventListener('keydown', (e) => {
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'k' || e.key === 'K')) {
+        e.preventDefault();
+        if (paletteBackdrop.classList.contains('show')) closePalette();
+        else openPalette();
+      } else if (e.key === 'Escape' && paletteBackdrop.classList.contains('show')) {
+        e.preventDefault();
+        closePalette();
+      }
+    });
+    // Also: typing "/" in an empty composer opens the palette
+    input.addEventListener('keydown', (e) => {
+      if (e.key === '/' && input.value === '' && !busy) {
+        e.preventDefault();
+        openPalette();
+      }
+    });
 
     // Click while streaming = stop
     sendBtn.addEventListener('click', (e) => {
@@ -1394,7 +2016,8 @@
       scrollBtn.classList.remove('show');
       setStatus('idle', 'ready');
       closeRail();
-      input.focus();
+      refreshTurnActions();
+      focusInput();
     });
 
     function bindEmpty(root = document) {
@@ -1411,7 +2034,12 @@
     loadSettings();
     bindEmpty();
     autoSize();
-    input.focus();
+    focusInput();
+
+    // Close rail if user resizes from mobile to desktop while it's open
+    window.addEventListener('resize', () => {
+      if (window.innerWidth > 880 && rail.classList.contains('open')) closeRail();
+    });
   </script>
 </body>
 </html>

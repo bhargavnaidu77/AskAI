@@ -95,6 +95,7 @@ router.post('/askAI', async (req: Request, res: Response) => {
     temperature = 0.2,
     top_p = 0.7,
     max_tokens,
+    stop,
     stream = false,
   } = req.body || {};
 
@@ -102,6 +103,12 @@ router.post('/askAI', async (req: Request, res: Response) => {
     typeof max_tokens === 'number' && max_tokens > 0
       ? Math.min(max_tokens, MODEL_MAX_TOKENS[model] ?? DEFAULT_MAX_TOKENS)
       : MODEL_MAX_TOKENS[model] ?? DEFAULT_MAX_TOKENS;
+
+  const stopList = Array.isArray(stop)
+    ? stop.filter((s: unknown): s is string => typeof s === 'string' && s.length > 0).slice(0, 4)
+    : typeof stop === 'string' && stop.length > 0
+    ? [stop]
+    : undefined;
 
   let chat: ChatMsg[] = [];
   if (Array.isArray(messages) && messages.length > 0) {
@@ -132,6 +139,7 @@ router.post('/askAI', async (req: Request, res: Response) => {
         temperature,
         top_p,
         max_tokens: resolvedMaxTokens,
+        ...(stopList && stopList.length ? { stop: stopList } : {}),
         stream: true,
       });
 
@@ -179,6 +187,7 @@ router.post('/askAI', async (req: Request, res: Response) => {
       temperature,
       top_p,
       max_tokens: resolvedMaxTokens,
+      ...(stopList && stopList.length ? { stop: stopList } : {}),
       stream: false,
     });
 
