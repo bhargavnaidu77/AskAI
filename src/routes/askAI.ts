@@ -80,12 +80,12 @@ const router = Router();
 type ChatMsg = { role: 'system' | 'user' | 'assistant'; content: string };
 
 const MODEL_MAX_TOKENS: Record<string, number> = {
-  'google/gemma-2-2b-it': 8192,
-  'google/gemma-3n-e4b-it': 8192,
+  'google/gemma-2-2b-it': 4096,
+  'google/gemma-3n-e4b-it': 4096,
   'openai/gpt-oss-20b': 16384,
   'openai/gpt-oss-120b': 16384,
 };
-const DEFAULT_MAX_TOKENS = 8192;
+const DEFAULT_MAX_TOKENS = 4096;
 
 router.post('/askAI', async (req: Request, res: Response) => {
   const {

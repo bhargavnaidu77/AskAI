@@ -1100,8 +1100,8 @@
     <div class="rail-section">
       <div class="head">Generation</div>
       <div class="field">
-        <label for="maxTokens">Max output <span class="val" id="maxTokensVal">8,192</span></label>
-        <input type="range" id="maxTokens" min="512" max="16384" step="512" value="8192" />
+        <label for="maxTokens">Max output <span><span class="val" id="maxTokensVal">4,096</span> <span style="color:var(--ink-faint);font-weight:400">/ <span id="maxTokensMax">16,384</span></span></span></label>
+        <input type="range" id="maxTokens" min="512" max="16384" step="512" value="4096" />
       </div>
       <div class="field">
         <label for="temperature">Temperature <span class="val" id="temperatureVal">0.20</span></label>
@@ -1224,6 +1224,14 @@
     const RENDER_INTERVAL_MS = 70;  // streaming render throttle
     const SEND_PATH = 'M5 12l14 0M13 6l6 6-6 6';
     const STOP_PATH = 'M6 6h12v12H6z';
+    // Upstream per-model max-output-token caps (kept in sync with server)
+    const MODEL_MAX_TOKENS = {
+      'google/gemma-2-2b-it':    4096,
+      'google/gemma-3n-e4b-it':  4096,
+      'openai/gpt-oss-20b':     16384,
+      'openai/gpt-oss-120b':    16384,
+    };
+    const FALLBACK_MAX_TOKENS = 4096;
     // Don't auto-focus the composer on touch — it pops the soft keyboard
     const IS_TOUCH = matchMedia('(hover: none) and (pointer: coarse)').matches;
     function focusInput() { if (!IS_TOUCH) input.focus(); }
@@ -1297,6 +1305,13 @@
         .slice(0, 4);
     }
     function syncSettingsUI() {
+      // Adapt the max-tokens slider to the selected model's upstream cap
+      const cap = MODEL_MAX_TOKENS[modelSel.value] || FALLBACK_MAX_TOKENS;
+      maxTokensEl.max = cap;
+      if (Number(maxTokensEl.value) > cap) maxTokensEl.value = cap;
+      // Update the "max" label next to the value
+      const maxLabel = document.getElementById('maxTokensMax');
+      if (maxLabel) maxLabel.textContent = cap.toLocaleString();
       maxTokensVal.textContent = Number(maxTokensEl.value).toLocaleString();
       temperatureVal.textContent = Number(temperatureEl.value).toFixed(2);
       topPVal.textContent = Number(topPEl.value).toFixed(2);
